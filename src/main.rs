@@ -15,7 +15,49 @@ fn main() {
         },
     }
 
-    let tetrominoes: Vec<(u8, Vec<Tetromino>)> = Vec::new();
+    let tetrominoes: Vec<Tetromino> = vec![
+        // I
+        Tetromino::Reflectable {
+            d: (
+                vec![vec![1, 1, 1, 1]],
+                vec![vec![1], vec![1], vec![1], vec![1]],
+            ),
+        },
+        // O
+        Tetromino::Reflectable {
+            d: (
+                vec![vec![1, 1, 1, 1], vec![1, 1, 1, 1]],
+                vec![vec![1, 1, 1, 1], vec![1, 1, 1, 1]],
+            ),
+        },
+        // T
+        Tetromino::Rotatable {
+            d: (
+                vec![vec![1, 1, 1], vec![0, 1, 0]],
+                vec![vec![1, 0], vec![1, 1], vec![1, 0]],
+                vec![vec![0, 1, 0], vec![1, 1, 1]],
+                vec![vec![0, 1], vec![1, 1], vec![0, 1]],
+            ),
+        },
+        // J
+        Tetromino::Rotatable {
+            d: (
+                vec![vec![0, 1], vec![0, 1], vec![1, 1]],
+                vec![vec![1, 1, 1], vec![0, 0, 1]],
+                vec![vec![1, 1], vec![1, 0], vec![1, 0]],
+                vec![vec![1, 0, 0], vec![1, 1, 1]],
+            ),
+        },
+        // L
+        Tetromino::Rotatable {
+            d: (
+                vec![vec![1, 1], vec![0, 1], vec![0, 1]], // here
+                vec![vec![1, 1, 1], vec![0, 0, 1]],
+                vec![vec![1, 1], vec![1, 0], vec![1, 0]],
+                vec![vec![1, 0, 0], vec![1, 1, 1]],
+            ),
+        },
+    ];
 
     let mut app = App::new();
     clear(&mut app);
