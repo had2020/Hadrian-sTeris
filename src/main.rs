@@ -4,16 +4,17 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
-fn main() {
-    enum Tetromino {
-        Reflectable {
-            d: (Vec<Vec<u8>>, Vec<Vec<u8>>),
-        },
-        Rotatable {
-            d: (Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>),
-        },
-    }
+#[derive(Clone)]
+enum Tetromino {
+    Reflectable {
+        d: (Vec<Vec<u8>>, Vec<Vec<u8>>),
+    },
+    Rotatable {
+        d: (Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>),
+    },
+}
 
+fn main() {
     let tetrominoes: Vec<Tetromino> = vec![
         // I
         Tetromino::Reflectable {
@@ -78,8 +79,10 @@ fn main() {
     show_cursor(false);
 
     let ran_ter = rand::rng().random_range(0..=6);
-
-    let mut cur_ter = Mutex::new(tetrominoes[ran_ter])
+    let mut cur_ter = Mutex::new(match tetrominoes[ran_ter].clone() {
+        Reflectable => {}
+        Rotatable => {}
+    });
 
     let tick_delay = Mutex::new(1.0);
     // 20 rows, and 10 cols
