@@ -1,6 +1,5 @@
 use TerimalRtdm::*;
-//use rand::Rng;
-//rand::rng().random_range(0..=4);
+use rand::Rng;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
@@ -26,49 +25,49 @@ fn main() {
         // O
         Tetromino::Reflectable {
             d: (
-                vec![vec![1, 1, 1, 1], vec![1, 1, 1, 1]],
-                vec![vec![1, 1, 1, 1], vec![1, 1, 1, 1]],
+                vec![vec![2, 2, 2, 2], vec![2, 2, 2, 2]],
+                vec![vec![2, 2, 2, 2], vec![2, 2, 2, 2]],
             ),
         },
         // T
         Tetromino::Rotatable {
             d: (
-                vec![vec![1, 1, 1], vec![0, 1, 0]],
-                vec![vec![1, 0], vec![1, 1], vec![1, 0]],
-                vec![vec![0, 1, 0], vec![1, 1, 1]],
-                vec![vec![0, 1], vec![1, 1], vec![0, 1]],
+                vec![vec![3, 3, 3], vec![0, 3, 0]],
+                vec![vec![3, 0], vec![3, 3], vec![3, 0]],
+                vec![vec![0, 3, 0], vec![3, 3, 3]],
+                vec![vec![0, 3], vec![3, 3], vec![0, 3]],
             ),
         },
         // J
         Tetromino::Rotatable {
             d: (
-                vec![vec![0, 1], vec![0, 1], vec![1, 1]],
-                vec![vec![1, 1, 1], vec![0, 0, 1]],
-                vec![vec![1, 1], vec![1, 0], vec![1, 0]],
-                vec![vec![1, 0, 0], vec![1, 1, 1]],
+                vec![vec![0, 4], vec![0, 4], vec![4, 4]],
+                vec![vec![4, 4, 4], vec![0, 0, 4]],
+                vec![vec![4, 4], vec![4, 0], vec![4, 0]],
+                vec![vec![4, 0, 0], vec![4, 4, 4]],
             ),
         },
         // L
         Tetromino::Rotatable {
             d: (
-                vec![vec![1, 1], vec![0, 1], vec![0, 1]],
-                vec![vec![0, 0, 1], vec![1, 1, 1]],
-                vec![vec![1, 0], vec![1, 0], vec![1, 1]],
-                vec![vec![1, 1, 1], vec![1, 0, 0]],
+                vec![vec![5, 5], vec![0, 5], vec![0, 5]],
+                vec![vec![0, 0, 5], vec![5, 5, 5]],
+                vec![vec![5, 0], vec![5, 0], vec![5, 5]],
+                vec![vec![5, 5, 5], vec![5, 0, 0]],
             ),
         },
         // S
         Tetromino::Reflectable {
             d: (
-                vec![vec![0, 1, 1], vec![1, 1, 0]],
-                vec![vec![1, 0], vec![1, 1], vec![0, 1]],
+                vec![vec![0, 6, 6], vec![6, 6, 0]],
+                vec![vec![6, 0], vec![6, 6], vec![0, 6]],
             ),
         },
         // Z
         Tetromino::Reflectable {
             d: (
-                vec![vec![1, 1, 0], vec![0, 1, 1]],
-                vec![vec![0, 1], vec![1, 1], vec![1, 0]],
+                vec![vec![7, 7, 0], vec![0, 7, 7]],
+                vec![vec![0, 7], vec![7, 7], vec![7, 0]],
             ),
         },
     ];
@@ -77,6 +76,10 @@ fn main() {
     clear(&mut app);
     raw_mode(true);
     show_cursor(false);
+
+    let ran_ter = rand::rng().random_range(0..=6);
+
+    let mut cur_ter = Mutex::new(tetrominoes[ran_ter])
 
     let tick_delay = Mutex::new(1.0);
     // 20 rows, and 10 cols
