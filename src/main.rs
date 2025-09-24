@@ -1,7 +1,7 @@
 use TerimalRtdm::*;
 //use rand::Rng;
 //rand::rng().random_range(0..=4);
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
@@ -13,30 +13,48 @@ fn main() {
 
     let tick_delay = Mutex::new(1.0);
     // 20 rows, and 10 cols
-    let mut grid: Vec<Vec<bool>> = Vec::new();
-    for _ in 0..21 {
-        grid.push(Vec::with_capacity(10));
+    let mut grid: Vec<Vec<u8>> = Vec::new();
+    for _ in 0..19 {
+        grid.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     thread::spawn(move || {
-        let mut app1 = App::new();
-        let mut grid_clone = grid.clone();
-        Text::new().show(&mut app1, "test", pos!(0, 0));
-        for i in 0..grid_clone.len() {
-            for j in 0..grid_clone[i].len() {
-                let pixel = if grid_clone[i][j] { "🔳" } else { "⬛️" };
-                Text::new().show(&mut app1, "test", pos!(i, j));
+        loop {
+            let mut app1 = App::new();
+            let grid_clone = grid.clone();
+
+            clear(&mut app1);
+            raw_mode(true);
+            show_cursor(false);
+
+            for i in 0..grid_clone.len() {
+                for j in 0..grid_clone[i].len() {
+                    let color = match grid_clone[i][j] {
+                        0 => Color::White,
+                        1 => Color::Cyan,
+                        2 => Color::Yellow,
+                        3 => Color::Magenta,
+                        4 => Color::Blue,
+                        5 => Color::BrightYellow,
+                        6 => Color::Green,
+                        7 => Color::Red,
+                        _ => Color::BrightMagenta,
+                    };
+                    Text::new()
+                        .background(color)
+                        .show(&mut app1, " ", pos!(i, j));
+                }
             }
+
+            render(&app1);
+            thread::sleep(Duration::from_secs_f64(*tick_delay.lock().unwrap()));
         }
-        thread::sleep(Duration::from_secs_f64(*tick_delay.lock().unwrap()));
     });
 
     loop {
         if Key::o().pressed(&mut app, KeyType::Esc) {
             break;
         }
-
-        render(&app);
         collect_presses(&mut app);
     }
     restore_terminal();
