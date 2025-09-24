@@ -6,6 +6,17 @@ use std::thread;
 use std::time::Duration;
 
 fn main() {
+    enum Tetromino {
+        Reflectable {
+            d: (Vec<Vec<u8>>, Vec<Vec<u8>>),
+        },
+        Rotatable {
+            d: (Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>),
+        },
+    }
+
+    let tetrominoes: Vec<(u8, Vec<Tetromino>)> = Vec::new();
+
     let mut app = App::new();
     clear(&mut app);
     raw_mode(true);
