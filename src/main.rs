@@ -51,10 +51,24 @@ fn main() {
         // L
         Tetromino::Rotatable {
             d: (
-                vec![vec![1, 1], vec![0, 1], vec![0, 1]], // here
-                vec![vec![1, 1, 1], vec![0, 0, 1]],
-                vec![vec![1, 1], vec![1, 0], vec![1, 0]],
-                vec![vec![1, 0, 0], vec![1, 1, 1]],
+                vec![vec![1, 1], vec![0, 1], vec![0, 1]],
+                vec![vec![0, 0, 1], vec![1, 1, 1]],
+                vec![vec![1, 0], vec![1, 0], vec![1, 1]],
+                vec![vec![1, 1, 1], vec![1, 0, 0]],
+            ),
+        },
+        // S
+        Tetromino::Reflectable {
+            d: (
+                vec![vec![0, 1, 1], vec![1, 1, 0]],
+                vec![vec![1, 0], vec![1, 1], vec![0, 1]],
+            ),
+        },
+        // Z
+        Tetromino::Reflectable {
+            d: (
+                vec![vec![1, 1, 0], vec![0, 1, 1]],
+                vec![vec![0, 1], vec![1, 1], vec![1, 0]],
             ),
         },
     ];
