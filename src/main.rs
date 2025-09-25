@@ -1,7 +1,11 @@
 use rand::Rng;
-use std::sync::Mutex;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Barrier, Mutex,
+};
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 use TerimalRtdm::*;
 
 #[derive(Clone)]
@@ -75,104 +79,160 @@ fn main() {
     raw_mode(true);
     show_cursor(false);
 
-    let highscore = Mutex::new(0);
+    let cur_ter = Arc::new(Mutex::new({
+        let idx = rand::rng().random_range(0..=6);
+        match tetrominoes[idx].clone() {
+            Tetromino::Reflectable { d } => d.0,
+            Tetromino::Rotatable { d } => d.0,
+        }
+    }));
+    let ter_pos = Arc::new(Mutex::new((5usize, 0usize)));
+    let grid = Arc::new(Mutex::new(vec![vec![0u8; 10]; 20])); // 20 rows, 10 cols
 
-    let ran_ter = rand::rng().random_range(0..=6);
-    let cur_ter = Mutex::new(match tetrominoes[ran_ter].clone() {
-        Tetromino::Reflectable { d } => d.0,
-        Tetromino::Rotatable { d } => d.0,
+    let stop = Arc::new(AtomicBool::new(false));
+    let start_gate = Arc::new(Barrier::new(3)); // main + 2 workers
+
+    thread::scope(|s| {
+        // game tick
+        {
+            let cur_ter = Arc::clone(&cur_ter);
+            let ter_pos = Arc::clone(&ter_pos);
+            let grid = Arc::clone(&grid);
+            let stop = Arc::clone(&stop);
+            let start = Arc::clone(&start_gate);
+
+            s.spawn(move || {
+                start.wait();
+                let mut highscore = 0;
+                let mut fall_delay: f64 = 1.0;
+                let mut start: Instant = Instant::now();
+
+                loop {
+                    if stop.load(Ordering::Relaxed) {
+                        break;
+                    }
+
+                    let (grid_snapshot, ter_snapshot, pos_snapshot) = {
+                        let g = grid.lock().unwrap().clone();
+                        let t = cur_ter.lock().unwrap().clone();
+                        let p = *ter_pos.lock().unwrap();
+                        (g, t, p)
+                    };
+
+                    let mut app1 = App::new();
+                    clear(&mut app1);
+                    raw_mode(true);
+                    show_cursor(false);
+
+                    // grid
+                    for y in 0..grid_snapshot.len() {
+                        for x in 0..grid_snapshot[y].len() {
+                            let color = match grid_snapshot[y][x] {
+                                0 => Color::Black,
+                                1 => Color::Cyan,
+                                2 => Color::Yellow,
+                                3 => Color::Magenta,
+                                4 => Color::Blue,
+                                5 => Color::BrightYellow,
+                                6 => Color::Green,
+                                7 => Color::Red,
+                                _ => Color::BrightMagenta,
+                            };
+                            Text::new()
+                                .background(color)
+                                .show(&mut app1, "·", pos!(x, y));
+                        }
+                    }
+
+                    // current tetromino
+                    for (dy, row) in ter_snapshot.iter().enumerate() {
+                        for (dx, cell) in row.iter().enumerate() {
+                            if *cell == 0 {
+                                continue;
+                            }
+                            let color = match *cell {
+                                1 => Color::Cyan,
+                                2 => Color::Yellow,
+                                3 => Color::Magenta,
+                                4 => Color::Blue,
+                                5 => Color::BrightYellow,
+                                6 => Color::Green,
+                                7 => Color::Red,
+                                _ => Color::BrightMagenta,
+                            };
+                            Text::new().background(color).show(
+                                &mut app1,
+                                "·",
+                                pos!(pos_snapshot.0 + dx, pos_snapshot.1 + dy),
+                            );
+                        }
+                    }
+
+                    Text::new().show(
+                        &mut app1,
+                        &format!("Highscore: {} Lines", highscore),
+                        pos!(0, 22),
+                    );
+
+                    render(&app1);
+
+                    // falling
+                    if start.elapsed().as_secs_f64() >= fall_delay {
+                        let mut p = ter_pos.lock().unwrap();
+                        if p.1 != 20 {
+                            p.1 = p.1.saturating_add(1);
+                        }
+                        start = Instant::now();
+                    }
+
+                    thread::sleep(Duration::from_secs_f64(0.1));
+                }
+            });
+        }
+        {
+            let stop = Arc::clone(&stop);
+            let ter_pos = Arc::clone(&ter_pos);
+            let start = Arc::clone(&start_gate);
+
+            // input
+            s.spawn(move || {
+                start.wait();
+                let mut app = App::new();
+
+                loop {
+                    if Key::o().pressed(&mut app, KeyType::Esc) {
+                        stop.store(true, Ordering::Relaxed);
+                        break;
+                    }
+                    if Key::o().pressed(&mut app, KeyType::A)
+                        || Key::o().pressed(&mut app, KeyType::LeftArrow)
+                    {
+                        let mut p = ter_pos.lock().unwrap();
+                        p.0 = p.0.saturating_sub(1);
+                    }
+                    if Key::o().pressed(&mut app, KeyType::D)
+                        || Key::o().pressed(&mut app, KeyType::RightArrow)
+                    {
+                        let mut p = ter_pos.lock().unwrap();
+                        p.0 = p.0.saturating_add(1);
+                    }
+                    if Key::o().pressed(&mut app, KeyType::S)
+                        || Key::o().pressed(&mut app, KeyType::DownArrow)
+                    {
+                        let mut p = ter_pos.lock().unwrap();
+                        if p.1 != 20 {
+                            p.1 = p.1.saturating_add(1);
+                        }
+                    }
+                    // TODO: rotation on w/UpArrow
+                    collect_presses(&mut app);
+
+                    thread::sleep(Duration::from_millis(1));
+                }
+            });
+        }
+        start_gate.wait();
     });
-    let ter_pos = Mutex::new((5, 0));
 
-    let tick_delay = Mutex::new(0.5);
-    // 20 rows, and 10 cols
-    let mut grid: Vec<Vec<u8>> = Vec::new();
-    for _ in 0..19 {
-        grid.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    }
-
-    thread::spawn(move || loop {
-        let mut app1 = App::new();
-        let grid_clone = grid.clone();
-
-        clear(&mut app1);
-        raw_mode(true);
-        show_cursor(false);
-
-        for i in 0..grid_clone.len() {
-            for j in 0..grid_clone[i].len() {
-                let color = match grid_clone[i][j] {
-                    0 => Color::Black,
-                    1 => Color::Cyan,
-                    2 => Color::Yellow,
-                    3 => Color::Magenta,
-                    4 => Color::Blue,
-                    5 => Color::BrightYellow,
-                    6 => Color::Green,
-                    7 => Color::Red,
-                    _ => Color::BrightMagenta,
-                };
-                Text::new()
-                    .background(color) // ·
-                    .show(&mut app1, " ", pos!(i, j + 1));
-            }
-        }
-        Text::new().show(
-            &mut app1,
-            &format!("Highscore: {:?} Lines", highscore.lock().unwrap()),
-            pos!(0, 22),
-        );
-
-        let read_ter_pos = ter_pos.lock().unwrap().clone();
-        let read_cur_ter = cur_ter.lock().unwrap().clone();
-
-        for i in 0..read_cur_ter.len() {
-            for j in 0..read_cur_ter[i].len() {
-                let color = match read_cur_ter[i][j] {
-                    0 => Color::Black,
-                    1 => Color::Cyan,
-                    2 => Color::Yellow,
-                    3 => Color::Magenta,
-                    4 => Color::Blue,
-                    5 => Color::BrightYellow,
-                    6 => Color::Green,
-                    7 => Color::Red,
-                    _ => Color::BrightMagenta,
-                };
-                Text::new().background(color).show(
-                    &mut app1,
-                    &format!(" "),
-                    pos!(i + read_ter_pos.0, j + read_ter_pos.1),
-                );
-            }
-        }
-        ter_pos.lock().unwrap().1 += 1;
-
-        render(&app1);
-        thread::sleep(Duration::from_secs_f64(*tick_delay.lock().unwrap()));
-    });
-
-    loop {
-        if Key::o().pressed(&mut app, KeyType::W) || Key::o().pressed(&mut app, KeyType::UpArrow) {
-            break; //TODO
-        }
-        if Key::o().pressed(&mut app, KeyType::A) || Key::o().pressed(&mut app, KeyType::LeftArrow)
-        {
-            ter_pos.lock().unwrap().0 = ter_pos.lock().unwrap().clone().0 - 1;
-        }
-        if Key::o().pressed(&mut app, KeyType::S) || Key::o().pressed(&mut app, KeyType::DownArrow)
-        {
-            break;
-        }
-        if Key::o().pressed(&mut app, KeyType::D) || Key::o().pressed(&mut app, KeyType::RightArrow)
-        {
-            break;
-        }
-
-        if Key::o().pressed(&mut app, KeyType::Esc) {
-            break;
-        }
-        collect_presses(&mut app);
-    }
     restore_terminal();
 }
