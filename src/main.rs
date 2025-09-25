@@ -18,6 +18,18 @@ enum Tetromino {
     },
 }
 
+fn rotate_cw(m: &[Vec<u8>]) -> Vec<Vec<u8>> {
+    let h = m.len();
+    let w = m[0].len();
+    let mut r = vec![vec![0u8; h]; w];
+    for y in 0..h {
+        for x in 0..w {
+            r[x][h - 1 - y] = m[y][x];
+        }
+    }
+    r
+}
+
 fn in_bounds(x: isize, y: isize, w: usize, h: usize) -> bool {
     x >= 0 && x < w as isize && y >= 0 && y < h as isize
 }
@@ -228,8 +240,13 @@ fn main() {
                     // falling
                     if start.elapsed().as_secs_f64() >= fall_delay {
                         let mut p = ter_pos.lock().unwrap();
-                        if p.1 < (20 - ter_snapshot[0].len()) {
+                        let t = cur_ter.lock().unwrap().clone();
+                        let mut g = grid.lock().unwrap();
+
+                        if !collides(&g, &t, p.0 as isize, (p.1 as isize) + 1) {
                             p.1 = p.1.saturating_add(1);
+                        } else {
+                            // TODO Lock, clear lines, reduce delay, new piece
                         }
                         start = Instant::now();
                     }
@@ -257,23 +274,52 @@ fn main() {
                         || Key::o().pressed(&mut app, KeyType::LeftArrow)
                     {
                         let mut p = ter_pos.lock().unwrap();
-                        p.0 = p.0.saturating_sub(1);
+                        let t = cur_ter.lock().unwrap().clone();
+                        let g = grid.lock().unwrap();
+                        if !collides(&g, &t, (p.0 as isize) - 1, p.1 as isize) {
+                            p.0 = p.0.saturating_sub(1);
+                        }
                     }
                     if Key::o().pressed(&mut app, KeyType::D)
                         || Key::o().pressed(&mut app, KeyType::RightArrow)
                     {
                         let mut p = ter_pos.lock().unwrap();
-                        p.0 = p.0.saturating_add(1);
+                        let t = cur_ter.lock().unwrap().clone();
+                        let g = grid.lock().unwrap();
+                        if !collides(&g, &t, (p.0 as isize) + 1, p.1 as isize) {
+                            p.0 += 1;
+                        }
                     }
                     if Key::o().pressed(&mut app, KeyType::S)
                         || Key::o().pressed(&mut app, KeyType::DownArrow)
                     {
                         let mut p = ter_pos.lock().unwrap();
-                        if p.1 < (20 - cur_ter.clone().lock().unwrap()[0].len()) {
-                            p.1 = p.1.saturating_add(1);
+                        let t = cur_ter.lock().unwrap().clone();
+                        let g = grid.lock().unwrap();
+                        if !collides(&g, &t, p.0 as isize, (p.1 as isize) + 1) {
+                            p.1 += 1;
                         }
                     }
-                    // TODO: rotation on w/UpArrow
+                    if Key::o().pressed(&mut app, KeyType::W)
+                        || Key::o().pressed(&mut app, KeyType::UpArrow)
+                    {
+                        let mut t_lock = cur_ter.lock().unwrap();
+                        let rotated = rotate_cw(&t_lock);
+                        let mut p = ter_pos.lock().unwrap();
+                        let g = grid.lock().unwrap();
+
+                        for kick in [0isize, -1, 1, -2, 2] {
+                            if !collides(&g, &rotated, (p.0 as isize) + kick, p.1 as isize) {
+                                *t_lock = rotated.clone();
+                                if kick < 0 {
+                                    p.0 = p.0.saturating_sub(kick.unsigned_abs());
+                                } else {
+                                    p.0 += kick as usize;
+                                }
+                                break;
+                            }
+                        }
+                    }
                     collect_presses(&mut app);
 
                     thread::sleep(Duration::from_millis(1));
