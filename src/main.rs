@@ -169,6 +169,11 @@ fn main() {
                     }
 
                     Text::new().show(&mut app1, &format!("Lines: {}", lines), pos!(12, 0));
+                    Text::new().show(&mut app1, "ESC to quit", pos!(12, 3));
+                    Text::new().show(&mut app1, "A/D <-/-> move", pos!(12, 4));
+                    Text::new().show(&mut app1, "S/↓ soft drop", pos!(12, 5));
+                    Text::new().show(&mut app1, "W/↑ rotate", pos!(12, 6));
+                    Text::new().show(&mut app1, "Space hard drop", pos!(12, 7));
 
                     render(&app1);
 
