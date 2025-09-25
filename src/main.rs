@@ -248,12 +248,7 @@ fn main() {
                         } else {
                             for (dy, row) in ter_snapshot.iter().enumerate() {
                                 for (dx, cell) in row.iter().enumerate() {
-                                    if g.len() > pos_snapshot.0 + dx {
-                                        if g[pos_snapshot.0 + dx].len() > pos_snapshot.1 + dy {
-                                            g[pos_snapshot.0 + dx][pos_snapshot.1 + dy] =
-                                                cell.clone();
-                                        }
-                                    }
+                                    g[dx][dy] = cell.clone();
                                 }
                             }
 
