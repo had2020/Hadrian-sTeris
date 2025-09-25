@@ -18,6 +18,31 @@ enum Tetromino {
     },
 }
 
+fn in_bounds(x: isize, y: isize, w: usize, h: usize) -> bool {
+    x >= 0 && x < w as isize && y >= 0 && y < h as isize
+}
+
+fn collides(grid: &[Vec<u8>], piece: &[Vec<u8>], px: isize, py: isize) -> bool {
+    let gh = grid.len();
+    let gw = grid[0].len();
+    for (dy, row) in piece.iter().enumerate() {
+        for (dx, &cell) in row.iter().enumerate() {
+            if cell == 0 {
+                continue;
+            }
+            let x = px + dx as isize;
+            let y = py + dy as isize;
+            if !in_bounds(x, y, gw, gh) {
+                return true;
+            }
+            if grid[y as usize][x as usize] != 0 {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn main() {
     let tetrominoes: Vec<Tetromino> = vec![
         // I
@@ -141,6 +166,29 @@ fn main() {
                             Text::new()
                                 .background(color)
                                 .show(&mut app1, "·", pos!(x, y));
+                        }
+                    }
+
+                    // ghost
+                    let mut ghost_y = pos_snapshot.1 as isize;
+                    while !collides(
+                        &grid_snapshot,
+                        &ter_snapshot,
+                        pos_snapshot.0 as isize,
+                        (ghost_y + 1) as isize,
+                    ) {
+                        ghost_y += 1;
+                    }
+                    for (dy, row) in ter_snapshot.iter().enumerate() {
+                        for (dx, cell) in row.iter().enumerate() {
+                            if *cell == 0 {
+                                continue;
+                            }
+                            Text::new().foreground(Color::BrightBlack).show(
+                                &mut app1,
+                                "·",
+                                pos!(pos_snapshot.0 + dx, ghost_y as usize + dy),
+                            );
                         }
                     }
 
