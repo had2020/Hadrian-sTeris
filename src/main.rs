@@ -103,7 +103,7 @@ fn main() {
 
             s.spawn(move || {
                 start.wait();
-                let mut highscore = 0;
+                let mut lines = 0;
                 let mut fall_delay: f64 = 1.0;
                 let mut start: Instant = Instant::now();
 
@@ -168,18 +168,14 @@ fn main() {
                         }
                     }
 
-                    Text::new().show(
-                        &mut app1,
-                        &format!("Highscore: {} Lines", highscore),
-                        pos!(0, 22),
-                    );
+                    Text::new().show(&mut app1, &format!("Lines: {}", lines), pos!(12, 0));
 
                     render(&app1);
 
                     // falling
                     if start.elapsed().as_secs_f64() >= fall_delay {
                         let mut p = ter_pos.lock().unwrap();
-                        if p.1 != 20 {
+                        if p.1 < (20 - ter_snapshot[0].len()) {
                             p.1 = p.1.saturating_add(1);
                         }
                         start = Instant::now();
@@ -220,7 +216,7 @@ fn main() {
                         || Key::o().pressed(&mut app, KeyType::DownArrow)
                     {
                         let mut p = ter_pos.lock().unwrap();
-                        if p.1 != 20 {
+                        if p.1 < (20 - cur_ter.clone().lock().unwrap()[0].len()) {
                             p.1 = p.1.saturating_add(1);
                         }
                     }
