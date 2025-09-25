@@ -1,8 +1,8 @@
-use TerimalRtdm::*;
 use rand::Rng;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
+use TerimalRtdm::*;
 
 #[derive(Clone)]
 enum Tetromino {
@@ -80,8 +80,8 @@ fn main() {
 
     let ran_ter = rand::rng().random_range(0..=6);
     let mut cur_ter = Mutex::new(match tetrominoes[ran_ter].clone() {
-        Reflectable => {}
-        Rotatable => {}
+        Tetromino::Reflectable { d } => d.0,
+        Tetromino::Rotatable { d } => d.0,
     });
 
     let tick_delay = Mutex::new(1.0);
@@ -91,37 +91,35 @@ fn main() {
         grid.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
-    thread::spawn(move || {
-        loop {
-            let mut app1 = App::new();
-            let grid_clone = grid.clone();
+    thread::spawn(move || loop {
+        let mut app1 = App::new();
+        let grid_clone = grid.clone();
 
-            clear(&mut app1);
-            raw_mode(true);
-            show_cursor(false);
+        clear(&mut app1);
+        raw_mode(true);
+        show_cursor(false);
 
-            for i in 0..grid_clone.len() {
-                for j in 0..grid_clone[i].len() {
-                    let color = match grid_clone[i][j] {
-                        0 => Color::White,
-                        1 => Color::Cyan,
-                        2 => Color::Yellow,
-                        3 => Color::Magenta,
-                        4 => Color::Blue,
-                        5 => Color::BrightYellow,
-                        6 => Color::Green,
-                        7 => Color::Red,
-                        _ => Color::BrightMagenta,
-                    };
-                    Text::new()
-                        .background(color)
-                        .show(&mut app1, " ", pos!(i, j));
-                }
+        for i in 0..grid_clone.len() {
+            for j in 0..grid_clone[i].len() {
+                let color = match grid_clone[i][j] {
+                    0 => Color::White,
+                    1 => Color::Cyan,
+                    2 => Color::Yellow,
+                    3 => Color::Magenta,
+                    4 => Color::Blue,
+                    5 => Color::BrightYellow,
+                    6 => Color::Green,
+                    7 => Color::Red,
+                    _ => Color::BrightMagenta,
+                };
+                Text::new()
+                    .background(color)
+                    .show(&mut app1, " ", pos!(i, j));
             }
-
-            render(&app1);
-            thread::sleep(Duration::from_secs_f64(*tick_delay.lock().unwrap()));
         }
+
+        render(&app1);
+        thread::sleep(Duration::from_secs_f64(*tick_delay.lock().unwrap()));
     });
 
     loop {
