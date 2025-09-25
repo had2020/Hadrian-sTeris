@@ -246,6 +246,17 @@ fn main() {
                         if !collides(&g, &t, p.0 as isize, (p.1 as isize) + 1) {
                             p.1 = p.1.saturating_add(1);
                         } else {
+                            for (dy, row) in ter_snapshot.iter().enumerate() {
+                                for (dx, cell) in row.iter().enumerate() {
+                                    if g.len() > pos_snapshot.0 + dx {
+                                        if g[pos_snapshot.0 + dx].len() > pos_snapshot.1 + dy {
+                                            g[pos_snapshot.0 + dx][pos_snapshot.1 + dy] =
+                                                cell.clone();
+                                        }
+                                    }
+                                }
+                            }
+
                             // TODO Lock, clear lines, reduce delay, new piece
                         }
                         start = Instant::now();
