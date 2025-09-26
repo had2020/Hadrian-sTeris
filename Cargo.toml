@@ -9,7 +9,7 @@ description = "Tetromino game"
 crossterm = "0.26.1"
 rand = "0.8.5"
 tui = "0.19.0"
-rodio = { version = "0.21.1", features = ["symphonia-all"] }
+rodio = { version = "0.21.1", features = ["symphonia-all", "tracing"] }
 
 [profile.release]
 lto = true
