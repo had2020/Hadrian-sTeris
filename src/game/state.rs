@@ -2,6 +2,9 @@ use std::collections::VecDeque;
 
 use tui::style::Color;
 
+use std::fs::File;
+use std::io::BufReader;
+
 use super::{
     level::{ClearedLines, Level},
     tetromino::Tetromino,
