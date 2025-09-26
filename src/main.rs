@@ -13,8 +13,7 @@ use std::time::Duration;
 
 fn main() {
     thread::spawn(|| loop {
-        let stream_handle =
-            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let stream_handle = rodio::OutputStreamBuilder::open_default_stream().expect("");
         let file = BufReader::new(File::open("sounds/0x06.mp3").unwrap());
         let sink = rodio::play(&stream_handle.mixer(), file).unwrap();
         thread::sleep(Duration::from_secs(52));
